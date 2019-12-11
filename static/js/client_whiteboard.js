@@ -173,12 +173,12 @@ let colors = [
 	[255, 255, 255],
 	[0, 0, 0],
 	[244, 67, 54],
+	[233, 30, 99],
 	[103, 58, 183],
 	[63, 81, 181],
 	[33, 150, 243],
 	[0, 150, 136],
 	[76, 175, 80],
-	[139, 195, 74],
 	[255, 235, 59],
 	[255, 152, 0],
 	[96, 125, 139],
@@ -275,17 +275,27 @@ window.onload = function() {
     let brush_size_2 = document.getElementById("brush_size_2");
 	let brush_size_3 = document.getElementById("brush_size_3");
 	
-	let uri = `${window.location.hostname}:${window.location.port}`
+	let protocol = window.location.protocol;
+	let ws_protocol = protocol == "https:" ? "wss:" : "ws:";
+
+	let uri = `${window.location.hostname}:${window.location.port}`;
 
 	let room_id = window.location.pathname.substr(1);
 
 	if (room_id == ""){
 		room_id = null;
-	}
 
-	if (room_id){
-		let websocket = new WebSocket("wss://" + uri + "/" + room_id);
-
+		$("#nickname-form").remove();
+		$("#nickname-feedback").remove();
+		$("#nickname-disabled").css("display", "block");
+		
+	} else {
+		$("#roomcode-display").css("display", "flex");
+		$("#roomcode").text(room_id);
+		$("#roomcode").attr("href", `${protocol}//${uri}/${room_id}`);
+	
+		let websocket = new WebSocket(`${ws_protocol}//${uri}/${room_id}`);
+	
 		websocket.onmessage = function(event){
 			data = JSON.parse(decode(event.data));
 	
@@ -311,7 +321,7 @@ window.onload = function() {
 				brush = $("<i class='material-icons' style='font-size:5em;margin-right:-0.5em'>brush</i>"
 				).css("color", `RGB(${color[0]}, ${color[1]}, ${color[2]})`);
 				name_card = $("<span></span>").text(i.nick).css("padding-top", "3em");
-
+	
 				cc = coords_to_corner(i.x, i.y)
 				userdiv = $("<div class='brush'></div>").append(brush).append(name_card).css("left", cc[0] + myCanvas.offsetLeft).css("top", cc[1] + myCanvas.offsetTop - 70);
 				$("body").append(userdiv);
@@ -327,12 +337,7 @@ window.onload = function() {
 			setTimeout(ws_push, 50)
 	
 		}
-
-	} else {
-		$("#nickname-form").remove();
-		$("#nickname-feedback").text("Nicknames are disabled in private rooms. Share this room to enable it!");
 	}
-
 
     let line_width = 10;
 	let stroke_style = 1;
@@ -564,11 +569,10 @@ window.onload = function() {
 });
 
 	$('#modalName').on('show.bs.modal', function (event) {
-		if (room_id){
-			$("#nickname-box").val("").attr("placeholder", nickname);
-			$("#nickname-feedback").text("\u{200B}")
-		}
+		$("#nickname-box").val("").attr("placeholder", nickname);
+		$("#nickname-feedback").text("\u{200B}");
 	})
+
 	$('#modalName').on('shown.bs.modal', function (event) {
 		$("#nickname-box").focus();
 	})
@@ -599,15 +603,15 @@ window.onload = function() {
 		event.preventDefault();
 		join_id = $("#join-box").val();
 		if (join_id){
-			window.location.replace("https://" + uri + "/" + join_id);
+			window.location.replace(`${protocol}//${uri}/${join_id}`);
 		}
 	})
 
 	$("#share-button2").click(async function(e){
-		data = await fetch("https://" + uri + "/initialize", {method:"POST", body:encode(JSON.stringify(entire_canvas))});
-		room_id = await data.text();
+		data = await fetch(`${protocol}//${uri}/initialize`, {method:"POST", body:encode(JSON.stringify(entire_canvas))});
+		join_id = await data.text();
 
-		window.location.replace("https://" + uri + "/" + room_id);
+		window.location.replace(`${protocol}//${uri}/${join_id}`);
 	})
 
 	// Disable Page Move
